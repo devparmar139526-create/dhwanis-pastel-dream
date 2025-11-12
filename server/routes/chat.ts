@@ -1,5 +1,7 @@
+// server/routes/chat.ts
 import type { RequestHandler } from "express";
 
+// This is the local fallback reply
 function localAssistantReply(message: string) {
   const templates = [
     `Aww Dhwani, that's so sweet! 💖`,
@@ -8,7 +10,6 @@ function localAssistantReply(message: string) {
     `You deserve the biggest slice of cake today 🍰 and all the smiles!`,
     `That sounds amazing! Tell me more and I'll add some sparkle ✨`,
   ];
-  // simple echoish with warmth
   const idx = Math.min(Math.abs(hashCode(message)) % templates.length, templates.length - 1);
   return `${templates[idx]}`;
 }
@@ -22,56 +23,85 @@ function hashCode(str: string) {
   return h;
 }
 
+// Helper to format history for Google Gemini
+function buildGeminiMessages(history: { role: string; content: string }[], newMessage: string) {
+  const systemPrompt = {
+    role: "user", // Gemini uses 'user' for system prompts in the 'contents' array
+    parts: [{ text: "You are Rishi talking to Dhwani on her birthday. Talk naturally like a close friend - warm, genuine, and caring. Congratulate her, share happy birthday wishes, and chat like friends do. Keep responses conversational (2-4 sentences), warm, and genuine. Use emojis occasionally like 🎉💖✨. Remember you're Rishi, her friend, not just a chatbot - be personal, kind, and celebrate her special day while keeping the friendly vibe going." }]
+  };
+  
+  const modelPrompt = {
+    role: "model",
+    parts: [{ text: "Got it, I'll be Rishi, her warm and friendly chat buddy. Let's celebrate Dhwani's birthday! 💖" }]
+  };
+
+  const contents = [systemPrompt, modelPrompt];
+  
+  history.forEach(msg => {
+    contents.push({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }]
+    });
+  });
+
+  contents.push({
+    role: "user",
+    parts: [{ text: newMessage }]
+  });
+
+  return contents;
+}
+
+
 export const handleChat: RequestHandler = async (req, res) => {
+  const { message, history } = req.body as { message: string; history?: { role: string; content: string }[] };
+  if (!message) return res.status(400).json({ error: "Missing message" });
+
+  // --- THIS IS THE FIX ---
+  // 1. Get the GEMINI_API_KEY
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+  // 2. If no key, use the local fallback
+  if (!GEMINI_API_KEY || GEMINI_API_KEY.length < 20) {
+    console.warn("GEMINI_API_KEY not set or invalid, using local fallback.");
+    const reply = localAssistantReply(message);
+    return res.json({ reply });
+  }
+
+  // 3. Build the correct Gemini API URL
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+  
+  const conversationHistory = Array.isArray(history) ? history : [];
+  const contents = buildGeminiMessages(conversationHistory, message);
+
   try {
-    const { message, history } = req.body as { message: string; history?: { role: string; content: string }[] };
-    if (!message) return res.status(400).json({ error: "Missing message" });
-
-   const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-
-    // Build conversation messages for GitHub Models API
-    const conversationHistory = Array.isArray(history) ? history : [];
-    const messages = [
-      {
-        role: "system",
-        content: "You are Rishi talking to Dhwani on her birthday. Talk naturally like a close friend - warm, genuine, and caring. Congratulate her, share happy birthday wishes, and chat like friends do. Keep responses conversational (2-4 sentences), warm, and genuine. Use emojis occasionally like 🎉💖✨. Remember you're Rishi, her friend, not just a chatbot - be personal, kind, and celebrate her special day while keeping the friendly vibe going."
-      },
-      ...conversationHistory.map(msg => ({
-        role: msg.role === "assistant" ? "assistant" : "user",
-        content: msg.content
-      })),
-      {
-        role: "user",
-        content: message
-      }
-    ];
-
-    // Use GitHub Models API (free with GitHub account)
-    const resp = await fetch("https://models.inference.ai.azure.com/chat/completions", {
+    // 4. Call the Google Gemini API
+    const resp = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${GITHUB_TOKEN}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-        temperature: 0.8,
-        max_tokens: 200,
+        contents: contents, // Use the correct "contents" format
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 200,
+        },
       }),
     });
 
     if (!resp.ok) {
       const text = await resp.text();
-      console.error("GitHub Models API error:", resp.status, text);
+      console.error("Google Gemini API error:", resp.status, text);
       const reply = localAssistantReply(message);
       return res.json({ reply });
     }
 
     const data = await resp.json();
-    const answer = data?.choices?.[0]?.message?.content?.trim() || localAssistantReply(message);
+    const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || localAssistantReply(message);
     
     res.json({ reply: answer });
+
   } catch (err: any) {
     console.error("/api/chat error", err);
     const reply = localAssistantReply(req.body.message);
