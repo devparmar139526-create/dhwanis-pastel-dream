@@ -1,0 +1,178 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Great+Vibes&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   */
+  :root {
+    /* Pastel dreamy palette */
+    --background: 300 100% 99%; /* near-white with a hint of pink */
+    --foreground: 270 15% 20%; /* soft ink */
+
+    --card: 0 0% 100%;
+    --card-foreground: 270 15% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 15% 20%;
+
+    /* Brand colors: lavender primary, pastel pink secondary */
+    --primary: 265 70% 70%; /* lavender */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 330 70% 86%; /* pastel pink */
+    --secondary-foreground: 270 25% 20%;
+
+    --muted: 280 40% 95%;
+    --muted-foreground: 270 10% 35%;
+
+    --accent: 315 80% 90%; /* rosy glow */
+    --accent-foreground: 270 30% 20%;
+
+    --destructive: 0 84% 62%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 275 35% 90%;
+    --input: 275 35% 90%;
+    --ring: 265 70% 70%;
+
+    --radius: 0.85rem;
+
+    /* Sidebar (unused but kept consistent) */
+    --sidebar-background: 300 100% 99%;
+    --sidebar-foreground: 270 15% 25%;
+    --sidebar-primary: 265 70% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 315 80% 96%;
+    --sidebar-accent-foreground: 270 15% 25%;
+    --sidebar-border: 275 35% 90%;
+    --sidebar-ring: 265 70% 70%;
+
+    /* Extra brand tokens */
+    --brand-pink: 330 70% 86%;
+    --brand-lavender: 265 70% 70%;
+    --brand-cream: 40 100% 98%;
+    --glow: 300 100% 99%;
+  }
+
+  .dark {
+    --background: 265 30% 10%;
+    --foreground: 0 0% 100%;
+
+    --card: 265 30% 12%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 265 30% 10%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 265 70% 70%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 330 70% 40%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 265 25% 18%;
+    --muted-foreground: 265 20% 75%;
+
+    --accent: 300 50% 25%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 265 25% 25%;
+    --input: 265 25% 25%;
+    --ring: 265 70% 70%;
+
+    --sidebar-background: 265 30% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 265 70% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 300 40% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 265 25% 25%;
+    --sidebar-ring: 265 70% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: radial-gradient(1200px 500px at 10% -10%, hsla(var(--brand-pink) / 0.25), transparent),
+      radial-gradient(1000px 400px at 110% 10%, hsla(var(--brand-lavender) / 0.22), transparent),
+      radial-gradient(900px 450px at 50% 120%, hsla(var(--brand-cream) / 0.6), transparent);
+    background-attachment: fixed;
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+}
+
+/* Custom utilities and animations */
+@layer utilities {
+  .glow-soft {
+    box-shadow: 0 0 0.5rem hsla(var(--brand-pink) / 0.5), 0 0 2rem hsla(var(--brand-lavender) / 0.35);
+  }
+  .glass {
+    background: linear-gradient(180deg, hsla(var(--brand-cream) / 0.6), hsla(var(--brand-cream) / 0.35));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .heading-script {
+    font-family: "Great Vibes", cursive;
+  }
+}
+
+@layer utilities {
+  .cursor-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, hsl(var(--secondary)) 0%, hsl(var(--primary)) 80%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    filter: drop-shadow(0 0 6px hsla(var(--primary) / 0.6));
+  }
+  .sparkle {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, white 0%, hsla(var(--primary) / 0.5) 90%);
+    pointer-events: none;
+    z-index: 40;
+    animation: sparkle-fade 700ms ease-out forwards;
+  }
+}
+
+@keyframes sparkle-fade {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-16px) scale(0.4); }
+}
+
+@keyframes float-slow {
+  0%   { transform: translateY(0) translateX(0); }
+  50%  { transform: translateY(-18px) translateX(8px); }
+  100% { transform: translateY(0) translateX(0); }
+}
